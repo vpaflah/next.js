@@ -1,6 +1,6 @@
 import { createNextDescribe } from 'e2e-utils'
 import { check } from 'next-test-utils'
-import { Response } from 'playwright-chromium'
+import { Response } from 'playwright'
 
 createNextDescribe(
   'interception-route-prefetch-cache',
