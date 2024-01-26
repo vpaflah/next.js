@@ -7,7 +7,7 @@ export function applyFlightData(
   existingCache: CacheNode,
   cache: CacheNode,
   flightDataPath: FlightDataPath,
-  wasPrefetched: boolean = false
+  isPrefetchReusable: boolean = false
 ): boolean {
   // The one before last item is the router state tree patch
   const [treePatch, cacheNodeSeedData, head] = flightDataPath.slice(-3)
@@ -32,7 +32,7 @@ export function applyFlightData(
       treePatch,
       cacheNodeSeedData,
       head,
-      wasPrefetched
+      isPrefetchReusable
     )
   } else {
     // Copy rsc for the root node of the cache.
@@ -47,7 +47,7 @@ export function applyFlightData(
       cache,
       existingCache,
       flightDataPath,
-      wasPrefetched
+      isPrefetchReusable
     )
   }
 
