@@ -22,7 +22,7 @@ export function prefetchReducer(
   const { url } = action
   url.searchParams.delete(NEXT_RSC_UNION_QUERY)
 
-  const prefetchCacheKey = createPrefetchCacheKey(url, state.nextUrl)
+  let prefetchCacheKey = createPrefetchCacheKey(url)
   const cacheEntry = state.prefetchCache.get(prefetchCacheKey)
 
   if (cacheEntry) {
@@ -52,20 +52,31 @@ export function prefetchReducer(
   }
 
   // fetchServerResponse is intentionally not awaited so that it can be unwrapped in the navigate-reducer
-  const serverResponse = prefetchQueue.enqueue(() =>
-    fetchServerResponse(
+  const serverResponse = prefetchQueue.enqueue(async () => {
+    const prefetchResponse = await fetchServerResponse(
       url,
-      // initialTree is used when history.state.tree is missing because the history state is set in `useEffect` below, it being missing means this is the hydration case.
       state.tree,
       state.nextUrl,
       state.buildId,
       action.kind
     )
-  )
+
+    /* [flightData, canonicalUrlOverride, postpone, intercept] */
+    const [, , , intercept] = prefetchResponse
+    const existingPrefetchEntry = state.prefetchCache.get(prefetchCacheKey)
+    // If we discover that the prefetch corresponds with an interception route, we want to move it to
+    // a prefixed cache key to avoid clobbering an existing entry.
+    if (intercept && existingPrefetchEntry) {
+      const prefixedCacheKey = createPrefetchCacheKey(url, state.nextUrl)
+      state.prefetchCache.set(prefixedCacheKey, existingPrefetchEntry)
+      state.prefetchCache.delete(prefetchCacheKey)
+    }
+
+    return prefetchResponse
+  })
 
   // Create new tree based on the flightSegmentPath and router state patch
   state.prefetchCache.set(prefetchCacheKey, {
-    // Create new tree based on the flightSegmentPath and router state patch
     treeAtTimeOfPrefetch: state.tree,
     data: serverResponse,
     kind: action.kind,

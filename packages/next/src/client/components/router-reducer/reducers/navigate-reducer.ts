@@ -127,8 +127,14 @@ function navigateReducer_noPPR(
     return handleExternalUrl(state, mutable, url.toString(), pendingPush)
   }
 
-  const prefetchCacheKey = createPrefetchCacheKey(url, state.nextUrl)
-  let prefetchValues = state.prefetchCache.get(prefetchCacheKey)
+  const prefetchCacheKey = createPrefetchCacheKey(url)
+  const interceptionCacheKey = createPrefetchCacheKey(url, state.nextUrl)
+  let prefetchValues =
+    // first check if there's a more specific interception route prefetch entry
+    // as we don't want to potentially re-use a cache node that would resolve to the same URL
+    // but renders differently when intercepted
+    state.prefetchCache.get(interceptionCacheKey) ||
+    state.prefetchCache.get(prefetchCacheKey)
 
   // If we don't have a prefetch value, we need to create one
   if (!prefetchValues) {
@@ -319,8 +325,14 @@ function navigateReducer_PPR(
     return handleExternalUrl(state, mutable, url.toString(), pendingPush)
   }
 
-  const prefetchCacheKey = createPrefetchCacheKey(url, state.nextUrl)
-  let prefetchValues = state.prefetchCache.get(prefetchCacheKey)
+  const prefetchCacheKey = createPrefetchCacheKey(url)
+  const interceptionCacheKey = createPrefetchCacheKey(url, state.nextUrl)
+  let prefetchValues =
+    // first check if there's a more specific interception route prefetch entry
+    // as we don't want to potentially re-use a cache node that would resolve to the same URL
+    // but renders differently when intercepted
+    state.prefetchCache.get(interceptionCacheKey) ||
+    state.prefetchCache.get(prefetchCacheKey)
 
   // If we don't have a prefetch value, we need to create one
   if (!prefetchValues) {

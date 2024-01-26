@@ -84,6 +84,7 @@ import {
   NEXT_RSC_UNION_QUERY,
   NEXT_ROUTER_PREFETCH_HEADER,
   NEXT_DID_POSTPONE_HEADER,
+  NEXT_URL,
 } from '../client/components/app-router-headers'
 import type {
   MatchOptions,
@@ -129,6 +130,8 @@ import {
 import { PrefetchRSCPathnameNormalizer } from './future/normalizers/request/prefetch-rsc'
 import { NextDataPathnameNormalizer } from './future/normalizers/request/next-data'
 import { getIsServerAction } from './lib/server-action-request-meta'
+import { isInterceptionRouteAppPath } from './future/helpers/interception-routes'
+import { isInterceptionRouteRewrite } from '../lib/generate-interception-routes-rewrites'
 
 export type FindComponentsResult = {
   components: LoadComponentsReturnType
@@ -2803,6 +2806,35 @@ export default abstract class Server<ServerOptions extends Options = Options> {
 
       if (cachedData.status) {
         res.statusCode = cachedData.status
+      }
+
+      if (
+        process.env.NODE_ENV === 'production' &&
+        isPrefetchRSCRequest &&
+        routeModule
+      ) {
+        // when prefetching interception routes, the prefetch cache key can vary based on Next-URL
+        // as multiple interception routes might resolve to the same URL but map to different components
+
+        // interception routes are implemented as beforeFiles rewrites
+        const beforeFilesRewrites =
+          this.getRoutesManifest()?.rewrites.beforeFiles
+
+        const interceptionRewrites = beforeFilesRewrites?.filter(
+          isInterceptionRouteRewrite
+        )
+
+        const couldBeRewritten = interceptionRewrites?.some((r) => {
+          // verify if the path for the current request corresponds with an interception route
+          return new RegExp(r.regex).test(routeModule.definition.pathname)
+        })
+
+        if (
+          couldBeRewritten ||
+          isInterceptionRouteAppPath(routeModule.definition.pathname)
+        ) {
+          res.setHeader('vary', `${RSC_VARY_HEADER}, ${NEXT_URL}`)
+        }
       }
 
       // Mark that the request did postpone if this is a data request.
