@@ -14,6 +14,7 @@ use crate::{
         next_cjs_optimizer::get_next_cjs_optimizer_rule,
         next_disallow_re_export_all_in_page::get_next_disallow_export_all_in_page_rule,
         next_page_config::get_next_page_config_rule, next_pure::get_next_pure_rule,
+        next_react_server_components::get_next_react_server_components_transform_rule,
         server_actions::ActionsTransform,
     },
 };
@@ -37,6 +38,9 @@ pub async fn get_next_client_transforms_rules(
 
     let mdx_rs = *next_config.mdx_rs().await?;
     rules.push(get_next_font_transform_rule(mdx_rs));
+    rules.push(get_next_react_server_components_transform_rule(
+        true, mdx_rs,
+    ));
 
     let pages_dir = match context_ty {
         ClientContextType::Pages { pages_dir } => {
